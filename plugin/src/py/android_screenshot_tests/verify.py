@@ -14,7 +14,8 @@ def _is_image_same(file1, file2):
 def _create_test_case(screenshot):
         test_class = screenshot.find('test_class').text
         test_name = screenshot.find('test_name').text
-        return TestCase(test_name, classname=test_class, elapsed_sec=1)
+        file_name = screenshot.find('relative_file_name').text
+        return TestCase(test_name, classname=test_class, stdout=file_name, elapsed_sec=1)
 
 def verify(record_directory, truth_directory, report_file):
     errors = []
@@ -24,9 +25,9 @@ def verify(record_directory, truth_directory, report_file):
         test_case = _create_test_case(screenshot)
         test_cases.append(test_case)
 
-        name = screenshot.find('name').text + ".png"
-        actual = os.path.join(record_directory, name)
-        expected = os.path.join(truth_directory, name)
+        file_name = screenshot.find('relative_file_name').text
+        actual = os.path.join(record_directory, file_name)
+        expected = os.path.join(truth_directory, file_name)
 
         same_image = _is_image_same(expected, actual)
         if not same_image:
