@@ -80,7 +80,14 @@
 
     .column-expected img,
     .column-actual img {
-      width: 100%;
+      max-width: 100%;
+      border: 1px dashed rgba(0, 0, 0, 0.5);
+    }
+
+    .column-expected img.dark,
+    .column-actual img.dark {
+      max-width: 100%;
+      border: 1px dashed rgba(255, 255, 255, 0.5);
     }
   </style>
   <script src="assets/js/handlebars-v4.0.5.js"></script>
@@ -94,11 +101,11 @@
       </div>
       <div class="row">
         <div class="one-half column column-expected">
-          <span>Expected</span>
-          <img class="screenshot" src="expected/{{ image }}" />
+          <div>Expected</div>
+          <img class="screenshot" src="expected/{{ image }}" title="{{ image }}" />
         </div>
-        <div class="one-half column column-actual">
-          <span class="{{#if failed}}wrong{{/if}}">Actual{{#if failed}} (Failed){{/if}}</span>
+        <div class="one-half column column-actual" title="{{ image }}">
+          <div class="{{#if failed}}wrong{{/if}}">Actual{{#if failed}} (Failed){{/if}}</div>
           <img class="screenshot" src="{{ image }}" />
         </div>
       </div>
@@ -123,18 +130,13 @@
         url: "screenshot_report.xml",
         success: function (root) {
           testcases = root.getElementsByTagName("testcase");
-          var anyFailures = root.getElementsByTagName("failure").length > 0;
-          if (anyFailures) {
-            $("#toggle-failures").removeClass("hidden");
-          } else {
-            $("#toggle-failures").addClass("hidden");
-          }
+          var failureCount = 0
           for (var i = 0; i < testcases.length; i++) {
             var element = testcases[i];
             var failed = element.getElementsByTagName("failure").length > 0;
             var className = element.getAttribute("classname")
             var methodName = element.getAttribute("name")
-            var fileName = className + "_" + methodName + ".png"
+            var fileName = element.getElementsByTagName("system-out")[0].childNodes[0].nodeValue
             var context = {
               class: className,
               method: methodName,
@@ -143,7 +145,18 @@
             };
             var html = screenshotTemplate(context);
             $(".container").append(html);
+
+            if (failed) {
+              failureCount++;
+            }
           }
+
+          if (failureCount > 0 && failureCount < testcases.length) {
+            $("#toggle-failures").removeClass("hidden");
+          } else {
+            $("#toggle-failures").addClass("hidden");
+          }
+
         }
       });
     });
