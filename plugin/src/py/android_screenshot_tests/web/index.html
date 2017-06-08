@@ -42,12 +42,14 @@
       transition: background-color 240ms linear;
     }
 
-    #action-bar {
+    #actions {
       position: fixed;
-      width:100%;
+      width: 100%;
+      text-align: right;
       top: 4rem;
       right: 4rem;
     }
+
     .fab {
       display: inline-block;
       width: 3rem;
@@ -55,16 +57,21 @@
       padding: 1rem;
       background-color: #33C3F0;
       border-radius: 3rem;
-      box-shadow: 0 0 1rem rgba(0, 0, 0, 0.5);
+      box-shadow: 0 0 1rem rgba(0, 0, 0, 0.2);
+      margin-left: 2rem;
     }
 
-    .fab {
+    .fab:hover {
       background-color: #43D4FF;
     }
 
     .fab img {
       width: 100%;
       height: 100%;
+    }
+
+    .hidden {
+      display: none;
     }
 
     .wrong {
@@ -79,7 +86,7 @@
   <script src="assets/js/handlebars-v4.0.5.js"></script>
   <script src="assets/js/jquery-3.2.1.min.js"></script>
   <script id="screenshot-template" type="text/x-handlebars-template">
-    <div class="card{{#if failed}}test-failed{{/if}}">
+    <div class="card {{#if failed}}test-failed{{else}}test-success{{/if}}">
       <div class="row test-header">
         <div class="column">
           <p>{{ class }}.{{ method }}()</p>
@@ -103,6 +110,10 @@
         event.preventDefault();
         $("#toggle-background, img.screenshot, body").toggleClass("dark");
       });
+      $("#toggle-failures").click(function (event) {
+        event.preventDefault();
+        $(".test-success").toggleClass("hidden");
+      });
 
       var source = $("#screenshot-template").html();
       var screenshotTemplate = Handlebars.compile(source);
@@ -112,6 +123,12 @@
         url: "screenshot_report.xml",
         success: function (root) {
           testcases = root.getElementsByTagName("testcase");
+          var anyFailures = root.getElementsByTagName("failure").length > 0;
+          if (anyFailures) {
+            $("#toggle-failures").removeClass("hidden");
+          } else {
+            $("#toggle-failures").addClass("hidden");
+          }
           for (var i = 0; i < testcases.length; i++) {
             var element = testcases[i];
             var failed = element.getElementsByTagName("failure").length > 0;
@@ -140,17 +157,12 @@
         <h1>Screenshot Test Report</h1>
       </div>
     </div>
-    <div class="row">
-      <div class="five columns">
-
-      </div>
-    </div>
   </div>
-  <div id="actionbar">
-    <a id="toggle-failures" class="fab" href="#" alt="Toggle Background">
-      <img src="assets/images/brightness-5.png" />
+  <div id="actions">
+    <a id="toggle-failures" class="fab hidden" href="#" title="Toggle failed tests">
+      <img src="assets/images/alert-circle-outline.png" />
     </a>
-    <a id="toggle-background" class="fab" href="#" alt="Toggle Background">
+    <a id="toggle-background" class="fab" href="#" title="Toggle Background">
       <img src="assets/images/brightness-5.png" />
     </a>
   </div>
