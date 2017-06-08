@@ -8,12 +8,12 @@ import subprocess
 import tempfile
 from os.path import exists, join
 
-from . import common
+from .common import *
 
 def _check_output(args, **kwargs):
     with tempfile.TemporaryFile() as f:
         kwargs['stderr'] = f
-        return common.check_output(args, **kwargs)
+        return check_output(args, **kwargs)
 
 def parse_package_line(line):
     """The line looks like this:
@@ -25,7 +25,7 @@ def parse_package_line(line):
 
 def get_aapt_bin():
     """Find the binary for aapt from $ANDROID_SDK"""
-    android_sdk = common.get_android_sdk()
+    android_sdk = get_android_sdk()
 
     build_tools = os.path.join(android_sdk, 'build-tools')
 

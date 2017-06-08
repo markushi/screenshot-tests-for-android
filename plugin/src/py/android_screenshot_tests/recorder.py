@@ -19,14 +19,17 @@ from . import common
 import shutil
 import tempfile
 
+from junit_xml import TestSuite, TestCase
+
 class VerifyError(Exception):
     pass
 
 class Recorder:
-    def __init__(self, input, output):
+    def __init__(self, input, output, report_dir=None):
         self._input = input
         self._output = output
-        self._realoutput = output
+        self._expectedoutput = output
+        self._report_dir = report_dir
 
     def _get_image_size(self, file_name):
         with Image.open(file_name) as im:
@@ -85,6 +88,11 @@ class Recorder:
             finally:
                 diff_image.close()
 
+    def _create_test_case(self, screenshot):
+        test_class = screenshot.find('test_class').text
+        test_name = screenshot.find('test_name').text
+        return TestCase(test_name, test_class, elapsed_sec=1)
+
     def record(self):
         self._clean()
         self._record()
@@ -93,13 +101,30 @@ class Recorder:
         self._output = tempfile.mkdtemp()
         self._record()
 
+        errors = []
+        test_cases = []
         root = self._get_metadata_root()
         for screenshot in root.iter("screenshot"):
+            test_case = self._create_test_case(screenshot)
+
             name = screenshot.find('name').text + ".png"
             actual = join(self._output, name)
-            expected = join(self._realoutput, name)
-            if not self._is_image_same(expected,
-                                       actual):
-                raise VerifyError("Image %s is not same as %s" % (actual, expected))
+            expected = join(self._expectedoutput, name)
 
+            if not self._is_image_same(expected, actual):
+                errors.append("Image %s is not same as %s" % (actual, expected))
+                test_case.add_failure_info(message="Image does not match")
+                test_cases.append(test_case)
+            
         shutil.rmtree(self._output)
+
+        if self._report_dir is not None:
+            print("Saving test result")
+            test_suite = TestSuite("Screenshot Tests", test_cases)
+            with open(os.path.join(self._report_dir, 'screenshot.xml'), 'w') as file:
+                TestSuite.to_file(file, [test_suite])            
+        
+        if len(errors) > 0:
+            raise VerifyError("\n".join(errors))
+            
+

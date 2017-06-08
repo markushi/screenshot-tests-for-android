@@ -14,7 +14,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import subprocess
-from . import common
+from .common import check_output
 from .common import get_adb
 
 class SimplePuller:
@@ -24,7 +24,7 @@ class SimplePuller:
         self._adb_args = list(adb_args)
 
     def remote_file_exists(self, src):
-        output = common.check_output(
+        output = check_output(
             [get_adb()] + self._adb_args + ["shell",
                                         "test -e %s && echo EXISTS" % src])
         return "EXISTS" in output
@@ -35,6 +35,6 @@ class SimplePuller:
             stderr=subprocess.STDOUT)
 
     def get_external_data_dir(self):
-        output = common.check_output(
+        output = check_output(
             [get_adb()] + self._adb_args + ["shell", "echo", "$EXTERNAL_STORAGE"])
         return output.strip().split()[-1]

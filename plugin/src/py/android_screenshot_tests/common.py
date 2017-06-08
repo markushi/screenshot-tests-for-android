@@ -41,3 +41,7 @@ def assertRegex(testcase, regex, string):
         testcase.assertRegex(regex, string)
     else:
         testcase.assertRegexpMatches(regex, string)
+
+def setup_paths():
+    android_home = get_android_sdk()
+    os.environ['PATH'] = os.environ['PATH'] + ":" + android_home + "/platform-tools/"

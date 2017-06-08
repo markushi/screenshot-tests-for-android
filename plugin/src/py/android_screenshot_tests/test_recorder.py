@@ -60,6 +60,8 @@ class TestRecorder(unittest.TestCase):
    <name>foobar</name>
    <tile_width>1</tile_width>
    <tile_height>1</tile_height>
+   <test_class>TestClass</test_class>
+    <test_name>testName</test_name>
 </screenshot>
 </screenshots>""")
 
@@ -71,14 +73,18 @@ class TestRecorder(unittest.TestCase):
         self.create_temp_image("bar.png", (10, 10), "red")
         self.make_metadata("""<screenshots>
 <screenshot>
-   <name>foo</name>
-   <tile_width>1</tile_width>
-   <tile_height>1</tile_height>
+    <name>foo</name>
+    <tile_width>1</tile_width>
+    <tile_height>1</tile_height>
+    <test_class>TestClass</test_class>
+    <test_name>testNameFoo</test_name>
 </screenshot>
 <screenshot>
-   <name>bar</name>
-   <tile_width>1</tile_width>
-   <tile_height>1</tile_height>
+    <name>bar</name>
+    <tile_width>1</tile_width>
+    <tile_height>1</tile_height>
+    <test_class>TestClass</test_class>
+    <test_name>testNameBar</test_name>
 </screenshot>
 </screenshots>""")
 
@@ -92,9 +98,11 @@ class TestRecorder(unittest.TestCase):
 
         self.make_metadata("""<screenshots>
 <screenshot>
-   <name>foobar</name>
+    <name>foobar</name>
     <tile_width>1</tile_width>
     <tile_height>2</tile_height>
+    <test_class>TestClass</test_class>
+    <test_name>testName</test_name>
 </screenshot>
 </screenshots>""")
 
@@ -115,9 +123,11 @@ class TestRecorder(unittest.TestCase):
 
         self.make_metadata("""<screenshots>
 <screenshot>
-   <name>foobar</name>
+    <name>foobar</name>
     <tile_width>2</tile_width>
     <tile_height>1</tile_height>
+    <test_class>TestClass</test_class>
+    <test_name>testName</test_name>
 </screenshot>
 </screenshots>""")
 
@@ -139,9 +149,11 @@ class TestRecorder(unittest.TestCase):
 
         self.make_metadata("""<screenshots>
 <screenshot>
-   <name>foobar</name>
+    <name>foobar</name>
     <tile_width>2</tile_width>
     <tile_height>2</tile_height>
+    <test_class>TestClass</test_class>
+    <test_name>testName</test_name>
 </screenshot>
 </screenshots>""")
 
@@ -162,9 +174,11 @@ class TestRecorder(unittest.TestCase):
         self.create_temp_image("foobar.png", (10, 10), "blue")
         self.make_metadata("""<screenshots>
 <screenshot>
-   <name>foobar</name>
+    <name>foobar</name>
     <tile_width>1</tile_width>
     <tile_height>1</tile_height>
+    <test_class>TestClass</test_class>
+    <test_name>testName</test_name>
 </screenshot>
 </screenshots>""")
 
@@ -175,9 +189,11 @@ class TestRecorder(unittest.TestCase):
         self.create_temp_image("foobar.png", (10, 10), "blue")
         self.make_metadata("""<screenshots>
 <screenshot>
-   <name>foobar</name>
+    <name>foobar</name>
     <tile_width>1</tile_width>
     <tile_height>1</tile_height>
+    <test_class>TestClass</test_class>
+    <test_name>testName</test_name>
 </screenshot>
 </screenshots>""")
 

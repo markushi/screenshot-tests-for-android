@@ -7,6 +7,7 @@ class ScreenshotsPluginExtension {
     def connectedAndroidTestTarget = "connectedAndroidTest"
     def customTestRunner = false
     def recordDir = "screenshots"
+    def verifyDir = "screenshots"
     def addCompileDeps = true
 
     // Only used for the pullScreenshotsFromDirectory task
@@ -45,13 +46,15 @@ class ScreenshotsPlugin implements Plugin<Project> {
         executable = 'python'
         environment('PYTHONPATH', jarFile)
 
-        args = ['-m', 'android_screenshot_tests.pull_screenshots', "--apk", output.toString()]
-
+        args = ['-m', 'android_screenshot_tests.main', "--apk"]
         if (recordMode) {
-          args += ["--record", project.screenshots.recordDir]
+          args += ["--record"]
         } else if (verifyMode) {
-          args += ["--verify", project.screenshots.recordDir]
+          args += ["--verify"]
         }
+        args += ["--record-dir=" + new File(project.getBuildDir(), project.screenshots.recordDir).getAbsolutePath()]
+        args += ["--verify-dir=" + new File(project.screenshots.verifyDir).getAbsolutePath()]
+        args += [output.toString()]
       }
     }
 
@@ -69,6 +72,7 @@ class ScreenshotsPlugin implements Plugin<Project> {
           return;
         }
 
+
         logger.quiet(" >>> Using (${referenceDir}) for screenshot verification")
 
         args = ['-m', 'android_screenshot_tests.pull_screenshots', targetPackage]
@@ -80,6 +84,7 @@ class ScreenshotsPlugin implements Plugin<Project> {
         } else {
           args += ["--verify", project.screenshots.recordDir]
         }
+        args += ["--report-dir", new File(project.getBuildDir(), 'reports').getAbsolutePath()]
       }
     }
 
