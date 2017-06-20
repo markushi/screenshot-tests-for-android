@@ -1,36 +1,22 @@
 package com.facebook.testing.screenshot.build
 
 import org.gradle.api.*
+import java.io.File;
 
 class ScreenshotsPluginExtension {
     def testApkTarget = "packageDebugAndroidTest"
     def connectedAndroidTestTarget = "connectedAndroidTest"
     def customTestRunner = false
-    def recordDir = "screenshots"
-    def verifyDir = "screenshots"
+    def recordDir = null
+    def verifyDir = null
     def addCompileDeps = true
-
-    // Only used for the pullScreenshotsFromDirectory task
-    def referenceDir = ""
-    def targetPackage = ""
-
-    // Deprecated. We automatically detect adb now. Using this will
-    // throw an error.
-    @Deprecated
-    public void setAdb(String path) {
-      throw new IllegalArgumentException("Use of 'adb' is deprecated, we automatically detect it now")
-    }
+    def screenshotTestPackage = null
 }
 
 class ScreenshotsPlugin implements Plugin<Project> {
+
   void apply(Project project) {
     project.extensions.create("screenshots", ScreenshotsPluginExtension)
-
-    def recordMode = false
-    def verifyMode = false
-
-    def codeSource = ScreenshotsPlugin.class.getProtectionDomain().getCodeSource();
-    def jarFile = new File(codeSource.getLocation().toURI().getPath());
 
     // We'll figure out the adb in afterEvaluate
     def adb = null
@@ -39,71 +25,48 @@ class ScreenshotsPlugin implements Plugin<Project> {
       addRuntimeDep(project)
     }
 
-    project.task('pullScreenshots') << {
-      project.exec {
-        def output = getTestApkOutput(project)
-
-        executable = 'python'
-        environment('PYTHONPATH', jarFile)
-
-        args = ['-m', 'android_screenshot_tests.main', "--apk"]
-        if (recordMode) {
-          args += ["--record"]
-        } else if (verifyMode) {
-          args += ["--verify"]
-        }
-        args += ["--record-dir=" + new File(project.getBuildDir(), project.screenshots.recordDir).getAbsolutePath()]
-        args += ["--verify-dir=" + new File(project.screenshots.verifyDir).getAbsolutePath()]
-        args += [output.toString()]
+    project.task('recordScreenshots') {
+      doLast {
+        recordScreenshots(project, false)
       }
     }
 
-    project.task('pullScreenshotsFromDirectory') << {
-      project.exec {
-
-        executable = 'python'
-        environment('PYTHONPATH', jarFile)
-
-        def referenceDir = project.screenshots.referenceDir
-        def targetPackage = project.screenshots.targetPackage
-
-        if (!referenceDir || !targetPackage) {
-          printPullFromDirectoryUsage(getLogger(), referenceDir, targetPackage)
-          return;
-        }
-
-
-        logger.quiet(" >>> Using (${referenceDir}) for screenshot verification")
-
-        args = ['-m', 'android_screenshot_tests.pull_screenshots', targetPackage]
-        args += ["--no-pull"]
-        args += ["--temp-dir", referenceDir]
-
-        if (recordMode) {
-          args += ["--record", project.screenshots.recordDir]
-        } else {
-          args += ["--verify", project.screenshots.recordDir]
-        }
-        args += ["--report-dir", new File(project.getBuildDir(), 'reports').getAbsolutePath()]
+    project.task('verifyScreenshots') {
+      doLast {
+        recordScreenshots(project, true)
       }
     }
 
-    project.task("clearScreenshots") << {
-      project.exec {
-        executable = adb
-        args = ["shell", "rm", "-rf", "\$EXTERNAL_STORAGE/screenshots"]
-        ignoreExitValue = true
+    project.task("clearScreenshots") {
+      doLast {
+        project.exec {
+          executable = adb
+          args = ["shell", "rm", "-rf", "\$EXTERNAL_STORAGE/screenshots"]
+          ignoreExitValue = true
+        }
       }
     }
 
     project.afterEvaluate {
-      adb = project.android.getAdbExe().toString()
-      project.task("screenshotTests")
-      project.screenshotTests.dependsOn project.clearScreenshots
-      project.screenshotTests.dependsOn project.screenshots.connectedAndroidTestTarget
-      project.screenshotTests.dependsOn project.pullScreenshots
+      if (project.screenshots.screenshotTestPackage != null) {
+        project.android.defaultConfig.testInstrumentationRunnerArguments.put("package", project.screenshots.screenshotTestPackage)
+      }
 
-      project.pullScreenshots.dependsOn project.screenshots.testApkTarget
+      adb = project.android.getAdbExe().toString()
+      project.task("recordScreenshotTests")
+      project.recordScreenshotTests.group "screenshotTests"
+      project.recordScreenshotTests.dependsOn project.clearScreenshots
+      project.recordScreenshotTests.dependsOn project.screenshots.connectedAndroidTestTarget
+      project.recordScreenshotTests.dependsOn project.recordScreenshots
+
+      project.task("verifyScreenshotTests")
+      project.verifyScreenshotTests.group "screenshotTests"
+      project.verifyScreenshotTests.dependsOn project.clearScreenshots
+      project.verifyScreenshotTests.dependsOn project.screenshots.connectedAndroidTestTarget
+      project.verifyScreenshotTests.dependsOn project.verifyScreenshots
+
+      project.recordScreenshots.dependsOn project.screenshots.testApkTarget
+      project.verifyScreenshots.dependsOn project.screenshots.testApkTarget
     }
 
     if (!project.screenshots.customTestRunner) {
@@ -111,14 +74,43 @@ class ScreenshotsPlugin implements Plugin<Project> {
         testInstrumentationRunner = 'com.facebook.testing.screenshot.ScreenshotTestRunner'
       }
     }
+  }
 
-    project.task("recordMode") << {
-      recordMode = true
+  File getVerifyDir(Project project) {
+    if (project.screenshots.verifyDir != null) {
+      return new File(project.getProjectDir(), project.screenshots.verifyDir)
+    } else {
+      return new File(project.getProjectDir(), "screenshots")
     }
+  }
 
-    project.task("verifyMode") << {
-      verifyMode = true
+  File getRecordDir(Project project) {
+    if (project.screenshots.recordDir != null) {
+      return new File(project.getProjectDir(), project.screenshots.recordDir)
+    } else {
+      return new File(project.getBuildDir(), "reports" + File.separator + "screenshots")
     }
+  }
+
+  void recordScreenshots(Project project, boolean verify) {
+    project.exec {
+        def apkFile = getTestApkOutput(project)
+
+        def codeSource = ScreenshotsPlugin.class.getProtectionDomain().getCodeSource()
+        def jarFile = new File(codeSource.getLocation().toURI().getPath())
+        executable = 'python'
+        environment('PYTHONPATH', jarFile)
+
+        args = ['-m', 'android_screenshot_tests.main', "--apk"]
+        if (verify) {
+          args += ["--verify"]
+        } else {
+          args += ["--record"]
+        }
+        args += ["--record-dir=" + getRecordDir(project).getAbsolutePath()]
+        args += ["--verify-dir=" + getVerifyDir(project).getAbsolutePath()]
+        args += [apkFile.toString()]
+      }
   }
 
   String getTestApkOutput(Project project) {
@@ -126,21 +118,6 @@ class ScreenshotsPlugin implements Plugin<Project> {
     return project.tasks.getByPath(project.screenshots.testApkTarget).getOutputs().getFiles().filter {
       it.getAbsolutePath().endsWith ".apk"
     }.getSingleFile().getAbsolutePath()
-  }
-
-  void printPullFromDirectoryUsage(def logger, def referenceDir, def targetPackage) {
-    logger.error(" >>> You must specify referenceDir=[$referenceDir] and targetPackage=[$targetPackage]")
-    logger.error("""
-      EXAMPLE screenshot config
-
-      screenshots {
-        // This parameter points to the directory containing all the files pulled from a device
-        referenceDir = path/to/artifacts
-
-        // Your app's application id
-        targetPackage = "your.application.package"
-      }
-""")
   }
 
   void addRuntimeDep(Project project) {
