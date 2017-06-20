@@ -3,37 +3,19 @@ import getopt
 import os
 import common
 import shutil
-import zipfile
+
+from junit_xml import TestSuite
 
 import pull_screenshots
 import verify
 import aapt
 from .simple_puller import SimplePuller
+from .report import generate_web_report
 
 def usage():
-    print("usage: ./main.py --verify --verify-dir <package-name> [--no-pull --record-dir --apk]")
-    print("usage: ./main.py --record --verify-dir <package-name> [--no-pull]")
+    print("usage: ./main.py --verify --verify-dir=<dir> <package-name> [--no-pull --record-dir=<dir> --apk]")
+    print("usage: ./main.py --record --verify-dir=<dir> <package-name> [--no-pull]")
     return
-
-def copy_web(destination):
-    source = os.path.dirname(__file__)
-    while not os.path.isfile(source):
-        source = os.path.dirname(source)
-
-    with zipfile.ZipFile(source) as archive:
-        for file in archive.namelist():
-            if file.endswith('/'):
-                continue
-            if file.startswith('android_screenshot_tests/web/'):
-                path = file[len('android_screenshot_tests/web/'):]
-                folder_name = os.path.join(destination, path[:path.rindex('/')]) if '/' in path else destination
-                file_name = path[path.rindex('/')+1:] if '/' in path else path
-                file_name_full = os.path.join(folder_name, file_name)
-
-                if not os.path.exists(folder_name):
-                    os.makedirs(folder_name)
-                with open(file_name_full, 'wb') as f:
-                    f.write(archive.read(file))
 
 def copytree(src, dst, symlinks=False, ignore=None):
     if not os.path.exists(dst):
@@ -89,6 +71,9 @@ def main(argv):
         package = rest_args[0]
 
     if "--no-pull" not in opts:
+        if os.path.exists(record_directory):
+            shutil.rmtree(record_directory)
+
         puller_args = build_puller_args(opts)
         pull_screenshots.pull(package,
                                 destination_dir=record_directory,
@@ -106,10 +91,16 @@ def main(argv):
             shutil.rmtree(reference_directory)
         copytree(verify_directory, reference_directory)
 
-        copy_web(record_directory)
-        report_file = os.path.join(record_directory, 'screenshot_report.xml')
-        errors = verify.verify(
-            record_directory, reference_directory, report_file)
+        test_report, errors = verify.verify(record_directory, reference_directory)
+
+        test_report_file = os.path.join(record_directory, 'screenshot_report.xml')
+        with open(test_report_file, 'w') as file:
+            TestSuite.to_file(file, [test_report])
+
+        generate_web_report(test_report, record_directory)
+
+        print("\nTo review the screenshot test results navigate to:\n\tfile://%s/index.html\n\n" % record_directory)
+
         if len(errors) > 0:
             print("\n".join(errors))
             return 1
