@@ -9,12 +9,17 @@
 
 package com.facebook.testing.screenshot.internal;
 
+import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Environment;
+import android.app.Instrumentation;
+import android.content.Context;
+import android.support.test.uiautomator.UiDevice;
 
 import java.io.File;
+import java.io.IOException;
 
 /**
  * Provides a directory for an Album to store its screenshots in.
@@ -32,13 +37,15 @@ class ScreenshotDirectories {
   }
 
   private void checkPermissions() {
-    int res = mContext.checkCallingOrSelfPermission("android.permission.WRITE_EXTERNAL_STORAGE");
-    if (res != PackageManager.PERMISSION_GRANTED) {
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-        throw new RuntimeException("This does not currently work on API 23+, see "
-            + "https://github.com/facebook/screenshot-tests-for-android/issues/16 for details.");
-      } else {
-        throw new RuntimeException("We need WRITE_EXTERNAL_STORAGE permission for screenshot tests");
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+      final Instrumentation instrumentation = Registry.getRegistry().instrumentation;
+      final UiDevice device = UiDevice.getInstance(instrumentation);
+      final String packageName = instrumentation.getTargetContext().getPackageName();
+      try {
+        device.executeShellCommand("pm grant " + packageName + " " + Manifest.permission.READ_EXTERNAL_STORAGE);
+        device.executeShellCommand("pm grant " + packageName + " " + Manifest.permission.WRITE_EXTERNAL_STORAGE);
+      } catch (IOException e) {
+        throw new RuntimeException("Could not grant storage permissions", e);
       }
     }
   }
