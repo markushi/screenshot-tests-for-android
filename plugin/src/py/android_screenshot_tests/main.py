@@ -3,14 +3,13 @@ import getopt
 import os
 import common
 import shutil
-
 from junit_xml import TestSuite
 
-import pull_screenshots
-import verify
-import aapt
+from . import aapt
+from . import pull_screenshots
 from .simple_puller import SimplePuller
 from .report import generate_web_report
+from . import verify
 
 def usage():
     print("usage: ./main.py --verify --verify-dir=<dir> <package-name> [--no-pull --record-dir=<dir> --apk]")
