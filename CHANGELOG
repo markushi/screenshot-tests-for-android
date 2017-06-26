@@ -1,4 +1,9 @@
+* 0.4.3
 
+  - `gradlew verifyMode screenshotTests` is now gradlew verifyScreenshotTests`
+  - `gradlew recordMode screenshotTests` is now gradlew recordScreenshotTests`
+  - generate standalone HTML report with side-by-side images
+  - 
 * 0.4.2
 
   - Support for Android gradle plugin 2.2.0

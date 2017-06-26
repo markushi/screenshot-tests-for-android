@@ -65,6 +65,17 @@ You can install all the artifacts to your local maven repository using
   $ gradle installAll
 ```
 
+## Running with a local device
+To record your images you can execute the following:
+```bash
+  $ gradle recordScreenshotTests
+```
+
+To verify your images against the previously recorded ones, you simply execute:
+```bash
+  $ gradle verifyScreenshotTests
+```
+
 ## Running With a Remote Service
 
 For usage with a remote testing service (e.g. Google Cloud Test Lab) where ADB is not available directly the plugin supports a "disconnected" 
