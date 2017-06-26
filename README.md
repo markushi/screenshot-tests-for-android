@@ -1,3 +1,13 @@
+# About this fork
+
+This fork has been created to enhance and extend the feature set:
+* Simplified gradle integration
+* Automated storage runtime permission handling for Android 6 and above
+* JUnit test report integration suitable for CI reports
+* Side-by-side standalone HTML report
+
+This fork is currently work in progress (hence the `-SNAPSHOT` artifact version). There are plans to open a pull request and merge it back to upstream once all of our requirements are met.
+
 # screenshot-tests-for-android
 
 screenshot-tests-for-android is a library that can generate fast
